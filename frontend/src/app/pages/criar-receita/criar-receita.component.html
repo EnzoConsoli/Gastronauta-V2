@@ -161,6 +161,12 @@ Passo 3..."
         Modo de preparo é obrigatório.
       </div>
     </div>
+    <h2>Tags da Receita</h2>
+
+<tags-selector
+  [(selected)]="selectedTags">
+</tags-selector>
+
 
     <button type="submit" class="btn-submit" [disabled]="isLoading">
       {{ isLoading ? 'Enviando...' : 'Enviar minha receita' }}

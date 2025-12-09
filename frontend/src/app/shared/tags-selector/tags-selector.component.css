@@ -1,0 +1,22 @@
+.tag-category {
+  margin-bottom: 20px;
+}
+
+.tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-item {
+  padding: 6px 12px;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.tag-item:hover {
+  transform: scale(1.05);
+}

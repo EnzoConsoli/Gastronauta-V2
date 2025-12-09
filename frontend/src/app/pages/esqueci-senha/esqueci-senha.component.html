@@ -1,11 +1,23 @@
+<div class="space-background">
+  <div class="stars-wrapper"></div>
+</div>
+
 <div class="container">
 
+  <!-- LOGO -->
+  <div class="logo-box">
+    <img src="/logo.jpg" class="logo-small">
+    <div class="logo-glow"></div>
+  </div>
+
+  <!-- TÍTULO -->
   <h1 class="title">Recuperar Senha</h1>
 
+  <!-- DESCRIÇÃO DINÂMICA -->
   <p class="tagline">
     {{ etapa === 1 ? 'Digite seu email para receber um código.' :
        etapa === 2 ? 'Digite o código enviado ao seu email.' :
-       'Digite sua nova senha.' }}
+       'Defina e confirme sua nova senha.' }}
   </p>
 
   <!-- =============================== -->
@@ -13,19 +25,20 @@
   <!-- =============================== -->
   <form *ngIf="etapa === 1" (ngSubmit)="onEnviarEmail(emailInput)" #form1="ngForm" class="auth-form">
 
-    <input type="email"
-           class="form-control"
-           placeholder="Digite seu email"
-           name="email"
-           [(ngModel)]="email"
-           required
-           email
-           #emailInput="ngModel">
+    <div class="form-group">
+      <input type="email"
+             class="form-control"
+             placeholder="Digite seu email"
+             name="email"
+             [(ngModel)]="email"
+             required
+             email
+             #emailInput="ngModel">
+    </div>
 
     <button type="submit" class="btn-submit" [disabled]="loading">
       {{ loading ? 'Enviando...' : 'Enviar código' }}
     </button>
-
   </form>
 
   <!-- =============================== -->
@@ -33,42 +46,86 @@
   <!-- =============================== -->
   <form *ngIf="etapa === 2" (ngSubmit)="onVerificarCodigo()" class="auth-form">
 
-    <input type="text"
-           class="form-control"
-           placeholder="Código de 6 dígitos"
-           maxlength="6"
-           [(ngModel)]="codigo"
-           name="codigo"
-           required>
+    <div class="form-group">
+      <input type="text"
+             class="form-control"
+             placeholder="Código de 6 dígitos"
+             maxlength="6"
+             [(ngModel)]="codigo"
+             name="codigo"
+             required>
+    </div>
 
     <button type="submit" class="btn-submit" [disabled]="loading">
       {{ loading ? 'Verificando...' : 'Validar código' }}
     </button>
 
-    <p class="back-link" (click)="etapa = 1" style="cursor:pointer;">Voltar</p>
+    <p class="back-link clickable" (click)="irParaEtapa(1)">Voltar</p>
   </form>
 
   <!-- =============================== -->
-  <!-- ETAPA 3 — Nova Senha -->
+  <!-- ETAPA 3 — Nova Senha + Confirmar -->
   <!-- =============================== -->
   <form *ngIf="etapa === 3" (ngSubmit)="onRedefinirSenha()" class="auth-form">
 
-    <input type="password"
-           class="form-control"
-           placeholder="Nova senha"
-           [(ngModel)]="novaSenha"
-           name="novaSenha"
-           required>
+    <!-- SENHA -->
+    <div class="form-group">
+      <input
+        [type]="showPassword ? 'text' : 'password'"
+        class="form-control"
+        placeholder="Nova senha"
+        [(ngModel)]="novaSenha"
+        name="novaSenha"
+        required
+        (ngModelChange)="onPasswordChange($event)"
+        (focus)="passwordFocused = true">
+
+      <i class="password-toggle-icon"
+         [class]="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
+         (click)="togglePasswordVisibility()"></i>
+    </div>
+
+    <!-- MEDIDOR DE FORÇA DA SENHA -->
+    <div class="password-strength-meter" *ngIf="passwordFocused">
+      <div class="strength-bar-container">
+        <div class="strength-bar"
+             [style.width.%]="passwordStrengthPercent"
+             [style.backgroundColor]="passwordStrengthColor">
+        </div>
+      </div>
+
+      <ul class="requirements-list">
+        <li [class.valid]="passwordValidators.minLength">Mínimo 8 caracteres</li>
+        <li [class.valid]="passwordValidators.hasUppercase">1 letra maiúscula</li>
+        <li [class.valid]="passwordValidators.hasNumber">1 número</li>
+        <li [class.valid]="passwordValidators.hasSpecialChar">1 caractere especial (!@#...)</li>
+      </ul>
+    </div>
+
+    <!-- CONFIRMAR SENHA -->
+    <div class="form-group">
+      <input
+        [type]="showConfirmPassword ? 'text' : 'password'"
+        class="form-control"
+        placeholder="Confirmar nova senha"
+        [(ngModel)]="confirmarSenha"
+        name="confirmarSenha"
+        required>
+
+      <i class="password-toggle-icon"
+         [class]="showConfirmPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
+         (click)="toggleConfirmPasswordVisibility()"></i>
+    </div>
 
     <button type="submit" class="btn-submit" [disabled]="loading">
-      {{ loading ? 'Salvando...' : 'Redefinir Senha' }}
+      {{ loading ? 'Salvando...' : 'Redefinir senha' }}
     </button>
 
-    <p class="back-link" (click)="etapa = 2" style="cursor:pointer;">Voltar</p>
+    <p class="back-link clickable" (click)="irParaEtapa(2)">Voltar</p>
   </form>
 
   <!-- =============================== -->
-  <!-- MENSAGEM -->
+  <!-- MENSAGEM GLOBAL (ERRO / SUCESSO) -->
   <!-- =============================== -->
   <div *ngIf="message"
        class="response-message"

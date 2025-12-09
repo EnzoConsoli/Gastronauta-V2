@@ -4,18 +4,28 @@ import { Location } from '@angular/common';
 import { RecipeService } from '../../services/recipe.service';
 import { PopupComponent } from '../../shared/popup/popup.component';
 import { FormsModule, NgForm } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { CommonModule, } from '@angular/common';
+import { TagsSelectorComponent } from '../../shared/tags-selector/tags-selector.component';
+
+
 
 @Component({
   selector: 'app-criar-receita',
   standalone: true,
-  imports: [FormsModule, CommonModule, PopupComponent],
+  imports: [
+  FormsModule,
+  CommonModule,
+  PopupComponent,
+  TagsSelectorComponent   // ✅ AQUI
+],
   templateUrl: './criar-receita.component.html',
   styleUrls: ['./criar-receita.component.css']
+  
 })
 export class CriarReceitaComponent implements AfterViewInit, OnInit {
   @ViewChild('recipePopup') popup!: PopupComponent;
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
+  selectedTags: number[] = [];
 
   // 🔥 ADICIONADO: origem da navegação
   origem: string | null = null;
@@ -111,10 +121,13 @@ export class CriarReceitaComponent implements AfterViewInit, OnInit {
     this.isLoading = true;
 
     const formData = new FormData();
-    for (const key of Object.keys(this.recipeData)) {
-      formData.append(key, (this.recipeData as any)[key] || '');
-    }
-    formData.append('imagemReceita', this.selectedFile!, this.selectedFile!.name);
+for (const key of Object.keys(this.recipeData)) {
+  formData.append(key, (this.recipeData as any)[key] || '');
+}
+
+formData.append("tags", JSON.stringify(this.selectedTags)); // ✅ FORA DO LOOP
+formData.append("imagemReceita", this.selectedFile!, this.selectedFile!.name);
+
 
     this.recipeService.criar(formData).subscribe({
       next: () => {

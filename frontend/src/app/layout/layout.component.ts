@@ -151,74 +151,75 @@ export class LayoutComponent implements OnInit {
   }
 
   loginOutraConta(data: any) {
-    if (!data?.email || !data?.senha) {
-      this.switchPopup.erroMensagem = "Preencha email e senha.";
-      return;
-    }
-
-    this.authService.login({ email: data.email, senha: data.senha }).subscribe({
-      next: (res) => {
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('user_id', res.user_id);
-
-        this.switchPopup.hide();
-
-        this.authService.getProfile().subscribe({
-          next: (user) => {
-            this.avatarUrl = user.foto_perfil_url
-              ? `${BACKEND_URL}${user.foto_perfil_url}`
-              : 'assets/canvo.png';
-          }
-        });
-
-        this.router.navigate(['/feed']).then(() => window.location.reload());
-      },
-
-      error: (err) => {
-        this.switchPopup.erroMensagem =
-          err.error?.mensagem || "Email ou senha incorretos.";
-      }
-    });
-
-    this.deletePopup.show(
-      "Sucesso",
-      "Conta alterada com sucesso!",
-      false
-    );
+  if (!data?.email || !data?.senha) {
+    this.switchPopup.erroMensagem = "Preencha email e senha.";
+    return;
   }
+
+  this.authService.login({ email: data.email, senha: data.senha }).subscribe({
+    next: (res) => {
+      localStorage.setItem('token', res.token);
+      localStorage.setItem('user_id', res.user_id);
+
+      this.switchPopup.hide();
+
+      this.authService.getProfile().subscribe({
+        next: (user) => {
+          this.avatarUrl = user.foto_perfil_url
+            ? `${BACKEND_URL}${user.foto_perfil_url}`
+            : 'assets/canvo.png';
+        }
+      });
+
+      this.router.navigate(['/feed']).then(() => window.location.reload());
+    },
+
+    error: (err) => {
+      this.switchPopup.erroMensagem =
+        err.error?.mensagem || "Email ou senha incorretos.";
+    }
+  });
+}
+
 
   abrirPopupExcluir() {
-    this.deletePopup.show(
-      "Excluir conta?",
-      "Digite sua senha para confirmar a exclusão. Esta ação é permanente.",
-      true
-    );
-  }
+  this.deletePopup.show(
+    "Excluir conta?",
+    "Digite sua senha para confirmar a exclusão. Esta ação é permanente.",
+    true,  // modo confirmação
+    true   // 🔥 exige input (senha)
+  );
+}
 
-  acaoPopup(senhaDigitada: string) {
-    if (!this.deletePopup.isConfirmation) return;
-    this.confirmarExclusao(senhaDigitada);
-  }
+acaoPopup(senhaDigitada: string) {
+  if (!this.deletePopup.isConfirmation) return;
+  this.confirmarExclusao(senhaDigitada);
+}
 
-  confirmarExclusao(senhaDigitada: string) {
-    this.authService.deleteAccount(senhaDigitada).subscribe({
-      next: () => {
-        this.deletePopup.show("Sucesso", "Sua conta foi excluída com sucesso.", false);
+confirmarExclusao(senhaDigitada: string) {
+  this.authService.deleteAccount(senhaDigitada).subscribe({
+    next: () => {
+      this.deletePopup.show(
+        "Sucesso",
+        "Sua conta foi excluída com sucesso.",
+        false
+      );
 
-        this.deletePopup.confirmAction.subscribe(() => {
-          localStorage.removeItem('token');
-          this.router.navigate(['/home']);
-        });
-      },
-      error: (err) => {
-        this.deletePopup.show(
-          "Erro",
-          err.error?.mensagem || "Erro ao excluir conta.",
-          false
-        );
-      }
-    });
-  }
+      this.deletePopup.confirmAction.subscribe(() => {
+        localStorage.removeItem('token');
+        this.router.navigate(['/home']);
+      });
+    },
+    error: (err) => {
+      this.deletePopup.show(
+        "Erro",
+        err.error?.mensagem || "Erro ao excluir conta.",
+        false
+      );
+    }
+  });
+}
+
 
   fecharPopup() {}
 

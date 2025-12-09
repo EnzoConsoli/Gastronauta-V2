@@ -36,7 +36,10 @@
   height: 150px;
   border-radius: 50%;
   background-color: #ffffff;
+  object-fit: cover;   /* ⭐ evita esticar */
+  object-position: center; /* opcional: centraliza */
 }
+
 
 .details-container {
   flex-basis: 70%;

@@ -1,53 +1,98 @@
-/* src/app/pages/login/login.component.css */
-
 :host {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  height: 100%;
-  background-color: #12182B;
-  color: #FFFFFF;
+  height: 100vh;
+  background: radial-gradient(circle at center, #12182B 10%, #0B0F1A 100%);
+  overflow: hidden;
+  position: relative;
   font-family: 'Poppins', sans-serif;
+  color: white;
 }
 
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  max-width: 340px;
-  width: 100%;
+/* ====== FUNDO ====== */
+.space-background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 30px;
+.stars-wrapper {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.star-img {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background-image: url('/stars.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.65;
+  animation: twinkle 3s infinite ease-in-out;
+}
+
+@keyframes twinkle {
+  0%,100% { opacity: 0.3; transform: scale(1); }
+  50%     { opacity: 1; transform: scale(1.3); }
+}
+
+/* ====== LOGO + ANIMAÇÃO ====== */
+.logo-box {
+  position: relative;
+  animation: float 4s ease-in-out infinite;
+  margin-bottom: 20px;
 }
 
 .logo-small {
-  width: 80px;
-  height: auto;
-  position: relative;
-  right: 30px;
+  width: 130px;
+  filter: drop-shadow(0 0 12px #ffffffaa);
+}
+
+.logo-glow {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, #ffffff40 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  filter: blur(40px);
+  z-index: -1;
+}
+
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* ====== ÁREA DO FORMULÁRIO ====== */
+.container {
+  z-index: 10;
+  text-align: center;
+  width: 100%;
+}
+
+.form-area {
+  width: 330px;
+  margin: 0 auto;
 }
 
 .title {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
-  text-transform: uppercase;
-  margin: 0;
-  position: relative;
-  right: 45px;
+  letter-spacing: 3px;
+  margin-bottom: 25px;
 }
 
 .auth-form {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  width: 100%;
 }
 
 .form-group {
@@ -59,66 +104,56 @@
 .form-control {
   width: 100%;
   padding: 14px 20px;
-  background-color: #FFFFFF;
+  background-color: white;
   color: #12182B;
   border: none;
   border-radius: 50px;
   font-size: 1rem;
   font-family: 'Poppins', sans-serif;
-  box-sizing: border-box;
-}
-
-.form-control::placeholder {
-  color: #a0aec0;
 }
 
 .password-toggle-icon {
   position: absolute;
   top: 50%;
-  right: 20px;
+  right: 22px;
   transform: translateY(-50%);
-  color: #7a8a9e;
   cursor: pointer;
+  color: #777;
 }
 
 .btn-submit {
   width: 100%;
   padding: 14px 20px;
-  margin-top: 15px;
-  border-radius: 25px;
-  border: 2px solid #FFFFFF;
-  background-color: transparent;
-  color: #FFFFFF;
+  border-radius: 30px;
+  border: 2px solid white;
+  background: transparent;
+  color: white;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  margin-top: 10px;
+  transition: 0.25s;
 }
 
 .btn-submit:hover {
-  background-color: #FFFFFF;
+  background: white;
   color: #12182B;
 }
 
 .back-link {
-  color: #a0aec0;
-  text-decoration: none;
+  display: block;
   margin-top: 15px;
+  color: #dcdfe7;
   font-size: 0.9rem;
-  transition: all 0.2s ease-in-out;
+  text-decoration: none;
 }
 
 .back-link:hover {
   text-decoration: underline;
 }
 
-/* VERSÃO ATUALIZADA - APENAS O TEXTO VERMELHO */
 .error-message {
   color: #ff7b7b;
-  margin-bottom: 15px;
-  width: 100%;
-  box-sizing: border-box;
   font-weight: 500;
-  text-align: center;
-  font-size: 0.9rem;
+  margin-bottom: 10px;
 }

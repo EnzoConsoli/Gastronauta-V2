@@ -1,53 +1,140 @@
-:host {
-  display: block;
-  width: 100%;
-  background: #0e1525;
-  min-height: 100vh;
-}
-
-
-.feed-container {
-  width: 100%;
-  max-width: 600px; /* largura igual Instagram */
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-}
-/* Ícone no topo */
-.feed-header {
-  position: sticky;
-  top: 0;
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  padding: 12px 18px;
-  background-color: #12182B;
-  z-index: 1000;
-}
-
-.feed-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  object-fit: cover;
+/* BOTÃO FIXO NO CANTO SUPERIOR DIREITO */
+.filter-button {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  z-index: 1200;
+  background: #1d2335;
+  padding: 10px 12px;
+  border-radius: 10px;
   cursor: pointer;
-  border: 2px solid #ffffff44;
-  transition: transform .2s ease, border-color .2s;
+  border: 1px solid #2d3b56;
+  transition: .2s;
 }
 
-.feed-avatar:hover {
+.filter-button:hover {
   transform: scale(1.08);
-  border-color: #ffffff;
+  background: #26304a;
 }
 
-/* 🔥 ESSA LINHA MANTÉM OS POSTS IGUAL ESTAVA */
-.feed-wrapper {
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto; /* CENTRALIZA */
+/* FUNDO ESCURECIDO */
+.filter-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(3px);
+  z-index: 1300;
+}
+
+/* POPUP CENTRAL */
+.filter-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 90%;
+  max-width: 520px;
+  transform: translate(-50%, -50%);
+  background: #12182B;
+  padding: 25px;
+  border-radius: 14px;
+  border: 1px solid #2a3348;
+  z-index: 1400;
+  animation: fadeIn .2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -46%); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.filter-modal h2 {
+  margin-bottom: 18px;
+}
+
+/* TAGS DENTRO DO POPUP */
+.filter-tags-container {
   display: flex;
-  flex-direction: column;
-  gap: 25px;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 8px;
 }
 
+.filter-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: .2s;
+  background: transparent;
+  border: 2px solid transparent;
+}
+
+.filter-tag .circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.filter-tag:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+/* SELEÇÃO */
+/* Quando está selecionada, borda fica da cor correta */
+.filter-tag.selected {
+  border-color: var(--tag-color);
+  background: rgba(255,255,255,0.05);
+  color: var(--tag-color); /* <<< IMPORTANTE */
+}
+
+/* Bolinha interna */
+.filter-tag.selected .circle {
+  background: var(--tag-color);
+  border-color: var(--tag-color);
+}
+
+
+.filter-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.clear-btn,
+.apply-btn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+}
+
+.clear-btn {
+  background: #2e3a52;
+  color: #fff;
+}
+
+.apply-btn {
+  background: #4CAF50;
+  color: white;
+  transition: .2s;
+}
+
+.apply-btn:hover {
+  transform: scale(1.05);
+}
+
+.no-results {
+  text-align: center;
+  color: #bfc6d4;
+  font-size: 16px;
+  padding: 20px 0;
+  opacity: 0.8;
+}
 

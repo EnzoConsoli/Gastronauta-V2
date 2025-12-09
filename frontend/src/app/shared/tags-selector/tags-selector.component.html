@@ -1,0 +1,14 @@
+<div class="tag-category" *ngFor="let grupo of grupos">
+  <h3>{{ grupo.label }}</h3>
+
+  <div class="tags-grid">
+    <div
+      *ngFor="let tag of tagsPorGrupo(grupo.id)"
+      class="tag-item"
+      [ngStyle]="{ 'background-color': tag.cor, 'opacity': isSelected(tag.id) ? 1 : 0.4 }"
+      (click)="toggle(tag)"
+    >
+      {{ tag.nome }}
+    </div>
+  </div>
+</div>

@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path'); // Importe o 'path'
@@ -6,12 +7,15 @@ require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
+const tagRoutes = require('./routes/tagRoutes');
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/tags', tagRoutes);
 
 // --- ADICIONE ESTA LINHA ---
 // Serve a pasta de avatares estaticamente

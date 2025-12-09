@@ -312,6 +312,13 @@
   object-fit: cover;
 }
 
+.comment-reply {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 10px;
+  padding-left: 45px;
+}
+
 .comment-content {
   flex: 1;
 }
@@ -416,22 +423,115 @@
   font-size: 0.85rem;
   color: #9ca3af;
 }
-/* 🔥 Botão "Excluir" dentro do comentário */
-.comment-delete-btn {
-  background: transparent;
+
+/* Container das respostas */
+.comment-replies {
+  margin-left: 40px;
+  border-left: 2px solid #3a3f56;
+  padding-left: 15px;
+  margin-top: 10px;
+}
+
+/* Cada resposta */
+.reply-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+/* Avatar igual ao avatar principal */
+.reply-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
+}
+
+/* Conteúdo da resposta */
+.reply-content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Linha do topo da resposta */
+.reply-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Nome do usuário (igual ao principal) */
+.reply-user {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Data */
+.reply-date {
+  color: #bbbbbb;
+  font-size: 13px;
+}
+
+/* Texto */
+.reply-text {
+  color: #e2e2e2;
+  margin-top: 3px;
+  font-size: 15px;
+  word-break: break-word;       /* quebra palavras muito longas */
+  overflow-wrap: anywhere;      /* permite quebra em qualquer ponto */
+  white-space: normal;          /* garante que o texto volte à linha */
+  max-width: 100%;              /* impede ultrapassar o container */
+}
+
+/* Botão excluir igual ao principal */
+.reply-delete-btn {
+  background: none;
   border: none;
-  color: #f87171; /* vermelho suave */
-  font-size: 0.75rem;
+  color: #9ca3af;
   cursor: pointer;
-  margin-left: 10px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  opacity: 0.75;
+  font-size: 13px;
+  
+}
+
+.reply-delete-btn:hover {
+  text-decoration: underline;
+}
+
+.tags-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 14px;
+}
+
+.tag-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 600;
+
+  background: transparent;
+  border-radius: 999px;
+
+  border: 2px solid currentColor; /* << borda igual ao texto */
+  color: var(--tag-color); /* << cor do texto */
   transition: 0.2s ease;
 }
 
-.comment-delete-btn:hover {
-  opacity: 1;
-  color: #ef4444;
-  text-decoration: underline;
+.tag-item:hover {
+  background: rgba(255, 255, 255, 0.06); /* leve destaque no hover */
+  transform: translateY(-2px);
 }
+.no-tags {
+  color: #8892a5;
+  font-size: 14px;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+

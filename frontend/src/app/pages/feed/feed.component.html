@@ -1,11 +1,51 @@
+<!-- HEADER do Feed -->
+<div class="feed-header">
 
-<!-- Lista de posts -->
+  <!-- BOTÃO DO FILTRO NO CANTO SUPERIOR DIREITO -->
+<div class="filter-button" (click)="openFilter()">
+  <i class="fa-solid fa-filter"></i>
+</div>
+
+<!-- POPUP DE FILTRO -->
+<div class="filter-overlay" *ngIf="filterOpen" (click)="closeFilter()"></div>
+
+<div class="filter-modal" *ngIf="filterOpen">
+  <h2>Filtrar por Tags</h2>
+
+  <div class="filter-tags-container">
+    <div 
+      class="filter-tag" 
+      *ngFor="let tag of allTags"
+      [class.selected]="selectedTags.includes(tag.id)"
+      [style.--tag-color]="tag.cor"
+      [style.color]="selectedTags.includes(tag.id) ? tag.cor : '#fff'"
+      (click)="toggleTag(tag.id)">
+        
+        <span class="circle" [style.border-color]="tag.cor"></span>
+        <span class="tag-name" [style.color]="tag.cor">{{ tag.nome }}</span>
+      
+    </div>
+  </div>
+  
+
+  <div class="filter-actions">
+    <button class="clear-btn" (click)="clearFilter()">Limpar</button>
+    <button class="apply-btn" (click)="applyFilter()">Aplicar</button>
+  </div>
+</div>
 <div class="feed-wrapper">
+  <p *ngIf="filteredPosts.length === 0 && !isLoading" class="no-results">
+    Nenhuma receita encontrada com esses filtros.
+  </p>
+
   <app-post-card
-    *ngFor="let post of posts"
+    *ngFor="let post of filteredPosts"
     [post]="post"
     [currentUserId]="currentUserId">
   </app-post-card>
+</div>
+
+
 </div>
 
 <app-comment-modal></app-comment-modal>

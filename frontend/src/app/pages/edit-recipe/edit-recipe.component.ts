@@ -3,15 +3,24 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RecipeService } from '../../services/recipe.service';
+import { TagsSelectorComponent } from '../../shared/tags-selector/tags-selector.component';
+
 
 @Component({
   selector: 'app-edit-recipe',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [
+  CommonModule,
+  ReactiveFormsModule,
+  RouterLink,
+  TagsSelectorComponent   // ✅ AQUI
+],
+
   templateUrl: './edit-recipe.component.html',
   styleUrls: ['./edit-recipe.component.css']
 })
 export class EditRecipeComponent implements OnInit {
+  selectedTags: number[] = [];
   recipeForm: FormGroup;
   recipeId!: number;
   isLoading = true;
@@ -74,6 +83,10 @@ export class EditRecipeComponent implements OnInit {
         this.isLoading = false;
       }
     });
+    this.recipeService.buscarPorId(this.recipeId).subscribe(data => {
+    this.selectedTags = (data.tags || []).map((t: any) => t.id);
+});
+
   }
 
   onFileChange(event: Event): void {
@@ -99,8 +112,11 @@ export class EditRecipeComponent implements OnInit {
     const formData = new FormData();
 
     Object.keys(this.recipeForm.controls).forEach((key) => {
-      formData.append(key, this.recipeForm.get(key)?.value || '');
-    });
+  formData.append(key, this.recipeForm.get(key)?.value || '');
+});
+
+formData.append("tags", JSON.stringify(this.selectedTags)); // ✅ FORA DO LOOP
+
 
     if (this.selectedFile) {
       formData.append('imagemReceita', this.selectedFile);

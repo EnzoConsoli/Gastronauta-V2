@@ -5,10 +5,32 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { jwtDecode } from 'jwt-decode';
 import { PopupComponent } from '../../shared/popup/popup.component';
-import { RatingModalComponent } from '../../shared/rating-modal/rating-modal'; 
+import { RatingModalComponent } from '../../shared/rating-modal/rating-modal';
 import { AuthService } from '../../services/auth.service';
+import { ALL_TAGS } from '../../data/tags.data';
+
 
 const BACKEND_URL = 'http://localhost:3000';
+
+interface Avaliacao {
+  id: number;
+  usuario_id: number;
+  nome_usuario: string;
+  comentario: string;
+  nota: number;
+  data_avaliacao: string;
+  foto_perfil_url: string;
+
+  likes: number;
+  dislikes: number;
+  liked: boolean;
+  disliked: boolean;
+
+  respostas: any[];
+  replies: any[];
+  replyText: string;
+  showReplyBox: boolean;
+}
 
 @Component({
   selector: 'app-recipe-detail',
@@ -19,8 +41,10 @@ const BACKEND_URL = 'http://localhost:3000';
 })
 export class RecipeDetailComponent implements OnInit {
 
-  @ViewChild('deleteConfirmPopup') deletePopup!: PopupComponent;
-  @ViewChild('ratingModal') ratingModal!: RatingModalComponent;
+  @ViewChild('deleteConfirmPopup', { static: false }) deletePopup?: PopupComponent;
+  @ViewChild('ratingModal', { static: false }) ratingModal?: RatingModalComponent;
+
+  public BACKEND_URL = BACKEND_URL;
 
   recipe: any = null;
   isLoading = true;
@@ -35,28 +59,19 @@ export class RecipeDetailComponent implements OnInit {
   hasHalfStar: boolean = false;
   emptyStars: number = 5;
 
-  backend = BACKEND_URL;
-  comentarios: any[] = [];
-
+  comentarios: Avaliacao[] = [];
   authorAvatarUrl = 'assets/canvo.png';
-
-  profileData: any = {
-    nome_usuario: 'Carregando...',
-    nome_completo: '',
-    bio: '',
-    foto_perfil_url: 'assets/canvo.png'
-  };
-
   isLiked: boolean = false;
   private recipeId!: number;
 
-  private actionPending: 'delete' | 'delete-success' | 'edit-info' | 'comment-delete' | '' = '';
+  private actionPending: 'delete' | 'comment-delete' | 'reply-delete' | '' = '';
+  private selectedReply: { avaliacao: Avaliacao, resposta: any } | null = null;
   private selectedCommentId: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private recipeService: RecipeService,
-    private authService: AuthService, 
+    private authService: AuthService,
     private router: Router
   ) {}
 
@@ -64,247 +79,328 @@ export class RecipeDetailComponent implements OnInit {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const decodedToken: any = jwtDecode(token);
-        this.currentUserId = decodedToken.id;
-      } catch (e) { 
-        console.error("Token inválido:", e); 
-      }
+        const decoded: any = jwtDecode(token);
+        this.currentUserId = decoded.id;
+      } catch {}
     }
 
-    const idParam = this.route.snapshot.paramMap.get('id');
-    if (idParam) {
+    this.route.paramMap.subscribe(params => {
+      const idParam = params.get('id');
+      if (!idParam) {
+        this.error = 'ID da receita não fornecido.';
+        this.isLoading = false;
+        return;
+      }
+
       this.recipeId = +idParam;
+      this.recipe = null;
+      this.comentarios = [];
+      this.ratingValue = 0;
+      this.reviewCount = 0;
+
       this.loadRecipeDetails();
       this.loadRecipeRatings();
+    });
+  }
+
+  // ================================
+  // PERFIL DO AUTOR
+  // ================================
+  openAuthorProfile() {
+    if (!this.recipe) return;
+    this.router.navigate(['/dashboard'], {
+      queryParams: { user: this.recipe.usuario_id }
+    });
+  }
+
+  // ================================
+  // EDITAR RECEITA
+  // ================================
+  editarReceita() {
+    this.router.navigate(['/editar-receita', this.recipeId]);
+  }
+
+  // ================================
+  // CANCELAR POPUP
+  // ================================
+  onPopupCancel(): void {
+    this.actionPending = '';
+    this.selectedCommentId = null;
+    this.selectedReply = null;
+  }
+
+  // ================================
+  // EXCLUIR RECEITA (BOTÃO)
+  // ================================
+  excluirReceita(): void {
+    this.actionPending = 'delete';
+
+    // Se o popup existir, usa ele
+    if (this.deletePopup) {
+      this.deletePopup.show('Excluir Receita', 'Deseja realmente excluir esta receita?', true);
+      return;
+    }
+
+    // Fallback de segurança (caso o popup não tenha sido resolvido por algum motivo)
+    const ok = window.confirm('Deseja realmente excluir esta receita?');
+    if (ok) {
+      this.recipeService.excluir(this.recipeId).subscribe(() => {
+        this.router.navigate(['/dashboard']);
+      });
     } else {
-      this.error = 'ID da receita não fornecido na URL.';
-      this.isLoading = false;
+      this.actionPending = '';
     }
   }
 
+  // ===============================================================
+  // ABRIR PERFIL DO AUTOR DA AVALIAÇÃO
+  // ===============================================================
+  openUserProfile(userId: number): void {
+    this.router.navigate(['/dashboard'], {
+      queryParams: { user: userId }
+    });
+  }
+
+  deleteReply(avaliacao: Avaliacao, resposta: any) {
+    this.actionPending = 'reply-delete';
+    this.selectedReply = { avaliacao, resposta };
+
+    if (this.deletePopup) {
+      this.deletePopup.show(
+        'Excluir Resposta',
+        'Deseja realmente excluir esta resposta?',
+        true
+      );
+    } else {
+      const ok = window.confirm('Deseja realmente excluir esta resposta?');
+      if (ok) {
+        this.recipeService.excluirResposta(resposta.id).subscribe(() => {
+          avaliacao.replies = avaliacao.replies.filter(r => r.id !== resposta.id);
+          avaliacao.respostas = avaliacao.respostas.filter(r => r.id !== resposta.id);
+          this.selectedReply = null;
+        });
+      }
+      this.actionPending = '';
+    }
+  }
+
+  // ------------------------------------------------------------
+  // CARREGAR RECEITA
+  // ------------------------------------------------------------
   loadRecipeDetails(): void {
     this.recipeService.buscarPorId(this.recipeId).subscribe({
       next: (data) => {
         this.recipe = data;
+        this.authorAvatarUrl = data.foto_perfil_url ? BACKEND_URL + data.foto_perfil_url : 'assets/canvo.png';
 
-        this.authorAvatarUrl =
-          this.recipeService.getFullImageUrl(data.foto_perfil_url || '') || 'assets/canvo.png';
-
-        if (this.recipe.ingredientes) {
-          this.recipe.ingredientsList = this.recipe.ingredientes
+        if (data.ingredientes) {
+          this.recipe.ingredientsList = data.ingredientes
             .split('\n')
-            .filter((item: string) => item.trim() !== '');
+            .filter((i: string) => i.trim() !== '');
         }
 
-        this.fullImageUrl = this.recipeService.getFullImageUrl(this.recipe.url_imagem);
-        this.isOwner = this.currentUserId === this.recipe.usuario_id;
-        this.isLiked = data.isLikedByMe === 1 || data.isLikedByMe === true;
+        if (data.tags) {
+  this.recipe.tags = data.tags.map((t: any) => {
+    const localTag = ALL_TAGS.find(x => x.id === t.id);
+    return {
+      ...t,
+      cor: localTag?.cor || '#999',
+      grupo: localTag?.grupo || 'outro'
+    };
+  });
+}
 
+        
+
+        this.fullImageUrl = this.recipeService.getFullImageUrl(data.url_imagem);
+        this.isOwner = this.currentUserId === data.usuario_id;
+        this.isLiked = data.isLikedByMe === 1;
         this.isLoading = false;
       },
-      error: (err) => {
-        this.error = 'Receita não encontrada ou erro ao carregar.';
+      error: () => {
+        this.error = 'Erro ao carregar receita.';
         this.isLoading = false;
-        console.error(err);
       }
     });
   }
 
+  // ------------------------------------------------------------
+  // CARREGAR AVALIAÇÕES
+  // ------------------------------------------------------------
   loadRecipeRatings(): void {
     this.recipeService.buscarAvaliacoes(this.recipeId).subscribe({
       next: (data) => {
-        this.ratingValue = parseFloat(data.stats.mediaNotas) || 0;
-        this.reviewCount = data.stats.totalAvaliacoes || 0;
+        this.ratingValue = Number(data.stats?.mediaNotas) || 0;
+        this.reviewCount = Number(data.stats?.totalAvaliacoes) || 0;
         this.calculateStars(this.ratingValue);
 
-        this.comentarios = (data.comentarios || [])
-          .filter((c: any) => c.comentario && c.comentario.trim() !== '')
-          .map((c: any) => ({
-            ...c,
-            likes: c.likes || 0,
-            dislikes: c.dislikes || 0,
-            liked: false,
-            disliked: false,
-            showReplyBox: false,
-            replyText: '',
-            replies: []
-          }));
+        this.comentarios = (data.avaliacoes || []).map((a: any) => ({
+          id: a.id,
+          usuario_id: a.usuario_id,
+          nome_usuario: a.nome_usuario,
+          comentario: a.comentario,
+          nota: a.nota,
+          data_avaliacao: a.data_avaliacao,
+          foto_perfil_url: a.foto_perfil_url ? BACKEND_URL + a.foto_perfil_url : 'assets/canvo.png',
+
+          likes: Number(a.likes) || 0,
+          dislikes: Number(a.dislikes) || 0,
+          liked: a.minhaReacao === 'like',
+          disliked: a.minhaReacao === 'dislike',
+
+          respostas: a.respostas || [],
+          replies: a.respostas || [],
+          replyText: '',
+          showReplyBox: false
+        }));
       },
-      error: (err) => { 
-        console.error("Erro ao buscar avaliações:", err); 
+      error: () => {
+        this.comentarios = [];
       }
     });
   }
 
-  calculateStars(rating: number): void {
-    const cappedRating = Math.max(0, Math.min(5, rating)); 
-    this.fullStars = Math.floor(cappedRating);
-    this.hasHalfStar = cappedRating % 1 >= 0.5; 
-    const calculatedEmpty = 5 - this.fullStars - (this.hasHalfStar ? 1 : 0);
-    this.emptyStars = Math.max(0, calculatedEmpty); 
-  }
-
-  publicarAvaliacao(data: { nota: number, comentario: string }): void {
+  // ------------------------------------------------------------
+  // AVALIAR RECEITA
+  // ------------------------------------------------------------
+  publicarAvaliacao(data: { nota: number; comentario: string }): void {
     this.recipeService.publicarAvaliacao(this.recipeId, data).subscribe({
-      next: () => { 
-        this.loadRecipeRatings(); 
-      },
-      error: (err) => {
-        console.error("Erro ao publicar avaliação:", err);
-        this.deletePopup?.show('Erro', err.error?.mensagem || 'Não foi possível publicar sua avaliação.');
-      }
+      next: () => this.loadRecipeRatings()
     });
   }
 
-  excluirReceita(): void {
-    this.actionPending = 'delete';
-    this.deletePopup.show(
-      'Confirmar Exclusão',
-      `Tem certeza que deseja excluir a receita "${this.recipe.prato}" permanentemente?`,
-      true
-    );
-  }
-
-  // 🔥 SUPORTE PARA EXCLUIR COMENTÁRIO
-  deleteComment(c: any): void {
+  // ------------------------------------------------------------
+  // ABRIR POPUP PARA EXCLUSÃO DE AVALIAÇÃO
+  // ------------------------------------------------------------
+  deleteComment(c: Avaliacao) {
     this.selectedCommentId = c.id;
     this.actionPending = 'comment-delete';
 
-    this.deletePopup.show(
-      'Excluir comentário?',
-      `Deseja realmente excluir seu comentário?`,
-      true
-    );
+    if (this.deletePopup) {
+      this.deletePopup.show('Excluir Avaliação', 'Deseja realmente excluir esta avaliação?', true);
+    } else {
+      const ok = window.confirm('Deseja realmente excluir esta avaliação?');
+      if (ok) {
+        this.recipeService.excluirAvaliacao(this.recipeId, c.id).subscribe(() => {
+          this.comentarios = this.comentarios.filter(x => x.id !== c.id);
+        });
+      }
+      this.actionPending = '';
+    }
   }
 
-  // 🔥 POPUP CONFIRM
+  // ------------------------------------------------------------
+  // CONFIRMAR POPUP
+  // ------------------------------------------------------------
   onPopupConfirm(): void {
 
+    // EXCLUIR RECEITA
     if (this.actionPending === 'delete') {
-      this.recipeService.excluir(this.recipe.id).subscribe({
-        next: (res) => {
-          this.actionPending = 'delete-success';
-          this.deletePopup.show('Sucesso!', res.mensagem);
-        },
-        error: (err) => {
-          this.actionPending = '';
-          this.deletePopup.show('Erro!', err.error?.mensagem || 'Erro ao excluir receita.');
-        }
+      this.recipeService.excluir(this.recipeId).subscribe(() => {
+        this.router.navigate(['/dashboard']);
       });
-      return;
-    }
-    
-
-    if (this.actionPending === 'delete-success') {
-      this.router.navigate(['/dashboard']);
       this.actionPending = '';
       return;
     }
 
-    // EXCLUIR COMENTÁRIO DE AVALIAÇÃO
+    // EXCLUIR AVALIAÇÃO
     if (this.actionPending === 'comment-delete' && this.selectedCommentId !== null) {
-      this.recipeService.excluirComentario(this.recipeId, this.selectedCommentId).subscribe({
-        next: () => {
+      this.recipeService.excluirAvaliacao(this.recipeId, this.selectedCommentId)
+        .subscribe(() => {
           this.comentarios = this.comentarios.filter(c => c.id !== this.selectedCommentId);
           this.selectedCommentId = null;
-          this.actionPending = '';
-        },
-        error: (err) => {
-          console.error("Erro ao excluir comentário:", err);
-          this.deletePopup.show('Erro!', 'Não foi possível excluir o comentário.');
-          this.actionPending = '';
-        }
+        });
+      this.actionPending = '';
+      return;
+    }
+
+    // EXCLUIR RESPOSTA
+    if (this.actionPending === 'reply-delete' && this.selectedReply) {
+      const { avaliacao, resposta } = this.selectedReply;
+
+      this.recipeService.excluirResposta(resposta.id).subscribe(() => {
+        avaliacao.replies = avaliacao.replies.filter(r => r.id !== resposta.id);
+        avaliacao.respostas = avaliacao.respostas.filter(r => r.id !== resposta.id);
+        this.selectedReply = null;
       });
+
+      this.actionPending = '';
+      return;
     }
+
+    this.actionPending = '';
   }
 
-  editarReceita(): void {
-    this.router.navigate(['/editar-receita', this.recipeId]);
-  }
-
-  toggleLike(): void {
+  // ------------------------------------------------------------
+  // LIKE / DISLIKE RECEITA
+  // ------------------------------------------------------------
+  toggleLike() {
     this.isLiked = !this.isLiked;
-    
     this.recipeService.likeReceita(this.recipeId).subscribe({
-      next: (res) => { 
-        this.isLiked = res.liked;
-      },
-      error: (err) => {
-        this.isLiked = !this.isLiked;
-        console.error('Erro ao processar curtida:', err);
-      }
+      next: (res) => (this.isLiked = res.liked),
+      error: () => (this.isLiked = !this.isLiked)
     });
   }
 
-  onImageError(event: Event): void {
-    (event.target as HTMLImageElement).src = 'assets/placeholder.png';
-  }
-
-  goBack() {
-    window.history.back();
-  }
-
-  formatarData(dataString: string): string {
-    const data = new Date(dataString);
-    return data.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+  // ------------------------------------------------------------
+  // LIKE / DISLIKE AVALIAÇÃO
+  // ------------------------------------------------------------
+  toggleLikeComment(c: Avaliacao) {
+    this.recipeService.reagirAvaliacao(c.id, 'like').subscribe((res: any) => {
+      c.liked = res.liked ?? c.liked;
+      c.disliked = res.disliked ?? c.disliked;
+      c.likes = Number(res.likes ?? c.likes);
+      c.dislikes = Number(res.dislikes ?? c.dislikes);
     });
   }
 
-  createStarsArray(nota: number): number[] {
-    const value = Math.max(0, Math.min(5, Math.round(nota || 0)));
-    return Array(value).fill(0);
+  toggleDislikeComment(c: Avaliacao) {
+    this.recipeService.reagirAvaliacao(c.id, 'dislike').subscribe((res: any) => {
+      c.liked = res.liked ?? c.liked;
+      c.disliked = res.disliked ?? c.disliked;
+      c.likes = Number(res.likes ?? c.likes);
+      c.dislikes = Number(res.dislikes ?? c.dislikes);
+    });
   }
 
-  toggleLikeComment(c: any): void {
-    if (!c.liked) {
-      c.liked = true;
-      c.likes++;
-      if (c.disliked) {
-        c.disliked = false;
-        c.dislikes--;
-      }
-    } else {
-      c.liked = false;
-      c.likes--;
-    }
-  }
-
-  toggleDislikeComment(c: any): void {
-    if (!c.disliked) {
-      c.disliked = true;
-      c.dislikes++;
-      if (c.liked) {
-        c.liked = false;
-        c.likes--;
-      }
-    } else {
-      c.disliked = false;
-      c.dislikes--;
-    }
-  }
-
-  toggleReplyBox(c: any): void {
+  // ------------------------------------------------------------
+  // RESPOSTAS
+  // ------------------------------------------------------------
+  toggleReplyBox(c: Avaliacao) {
     c.showReplyBox = !c.showReplyBox;
   }
 
-  sendReply(c: any): void {
-    const text = (c.replyText || '').trim();
-    if (!text) return;
+  sendReply(c: Avaliacao) {
+    const txt = c.replyText.trim();
+    if (!txt) return;
 
-    if (!Array.isArray(c.replies)) {
-      c.replies = [];
-    }
+    this.recipeService.responderAvaliacao(c.id, txt)
+      .subscribe((res: any) => {
+        const nova = res.novaResposta ?? res;
 
-    c.replies.push(text);
-    c.replyText = '';
-    c.showReplyBox = false;
+        c.replies = [...c.replies, nova];
+        c.respostas = c.replies;
+
+        c.replyText = '';
+        c.showReplyBox = false;
+      });
   }
-  onPopupCancel(): void {
-  this.selectedCommentId = null;
-  this.actionPending = '';
-}
 
+  // ------------------------------------------------------------
+  // UI HELPERS
+  // ------------------------------------------------------------
+  onImageError(event: Event) {
+    (event.target as HTMLImageElement).src = 'assets/canvo.png';
+  }
+
+  goBack() { window.history.back(); }
+  formatarData(d: string) { return new Date(d).toLocaleDateString('pt-BR'); }
+  createStarsArray(n: number) { return Array(Math.round(n)).fill(0); }
+
+  calculateStars(rating: number) {
+    const r = Math.min(5, Math.max(0, rating));
+    this.fullStars = Math.floor(r);
+    this.hasHalfStar = r % 1 >= 0.5;
+    this.emptyStars = 5 - this.fullStars - (this.hasHalfStar ? 1 : 0);
+  }
 }

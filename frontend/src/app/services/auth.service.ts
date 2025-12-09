@@ -84,8 +84,6 @@ export class AuthService {
   }
 
   deleteAccount(senha: string) {
-    return this.http.request('delete', `${BACKEND_URL}/api/users/delete-account`, {
-      body: { senha }
-    });
-  }
+  return this.http.post('http://localhost:3000/api/auth/delete-account', { senha });
+}
 }

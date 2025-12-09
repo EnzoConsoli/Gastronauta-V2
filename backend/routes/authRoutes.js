@@ -218,5 +218,49 @@ router.post('/reset-password', async (req, res) => {
     res.status(500).json({ mensagem: 'Erro interno.' });
   }
 });
+// =======================================================
+// === EXCLUIR CONTA (POST /api/auth/delete-account) ===
+// =======================================================
+router.post('/delete-account', async (req, res) => {
+  const { senha } = req.body;
+  const token = req.headers.authorization?.split(" ")[1];
+
+  if (!senha) {
+    return res.status(400).json({ mensagem: "Senha obrigatória." });
+  }
+
+  try {
+    if (!token) {
+      return res.status(401).json({ mensagem: "Token ausente." });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const [[user]] = await db.query(
+      "SELECT senha_hash FROM usuarios WHERE id = ?",
+      [userId]
+    );
+
+    if (!user) {
+      return res.status(404).json({ mensagem: "Usuário não encontrado." });
+    }
+
+    const senhaCorreta = await bcrypt.compare(senha, user.senha_hash);
+
+    if (!senhaCorreta) {
+      return res.status(403).json({ mensagem: "Senha incorreta." });
+    }
+
+    await db.query("DELETE FROM usuarios WHERE id = ?", [userId]);
+
+    res.json({ mensagem: "Conta excluída com sucesso." });
+
+  } catch (error) {
+    console.error("Erro ao excluir conta:", error);
+    res.status(500).json({ mensagem: "Erro no servidor ao excluir conta." });
+  }
+});
+
 
 module.exports = router;

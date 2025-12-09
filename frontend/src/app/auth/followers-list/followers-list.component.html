@@ -14,11 +14,13 @@
     </div>
 
     <button
-      class="follow-btn"
-      [ngClass]="{ 'following': u.isFollowing }"
-      (click)="toggleFollow(u, $event)">
-      {{ getButtonText(u) }}
-    </button>
+  *ngIf="u.id !== loggedUserId" 
+  class="follow-btn"
+  [ngClass]="{ 'following': u.isFollowing }"
+  (click)="toggleFollow(u, $event)">
+  {{ getButtonText(u) }}
+</button>
+
 
   </div>
 

@@ -1,50 +1,87 @@
-<div class="post-header">
+<div class="post-card">
 
-  <!-- LINK DINÂMICO PARA PERFIL -->
-  <a 
-    [routerLink]="['/dashboard']"
-    [queryParams]="isOwner ? null : { user: post.usuario_id }">
-    <img [src]="authorAvatarUrl" class="author-avatar" (error)="onAvatarError($event)" />
-  </a>
+  <div class="post-header">
+    <!-- LINK DINÂMICO PARA PERFIL -->
+    <a
+      [routerLink]="['/dashboard']"
+      [queryParams]="isOwner ? null : { user: safePost.usuario_id }">
+      <img
+        [src]="authorAvatarUrl"
+        class="author-avatar"
+        (error)="onAvatarError($event)" />
+    </a>
 
-  <a 
-    class="author-username"
-    [routerLink]="['/dashboard']"
-    [queryParams]="isOwner ? null : { user: post.usuario_id }">
-      @{{ post.nome_usuario }}
-  </a>
-
-</div>
-
-<a [routerLink]="['/receita', post.id]">
-  <img 
-    [src]="postImageUrl" 
-    class="post-image" 
-    (error)="onPostImageError($event)"
-  />
-</a>
-
-<div class="info-row">
-  <div class="recipe-name">{{ post.prato }}</div>
-
-  <div class="engagement">
-
-    <div class="like-section" (click)="toggleLike()">
-      <i
-        class="fa-heart-icon"
-        [ngClass]="isLiked ? 'fa-solid fa-heart liked' : 'fa-regular fa-heart'"></i>
-      <span class="likes-count">{{ totalLikes }}</span>
-    </div>
-
-    <div class="rating-row">
-      <i class="fa-solid fa-star star-icon"></i>
-      <span>{{ avgAval }} / 5 ({{ totalAval }})</span>
-    </div>
-
+    <a
+      class="author-username"
+      [routerLink]="['/dashboard']"
+      [queryParams]="isOwner ? null : { user: safePost.usuario_id }">
+      @{{ safePost.nome_usuario }}
+    </a>
   </div>
-</div>
 
-<div class="post-description">
-  <span class="author-username-desc">@{{ post.nome_usuario }}</span>
-  {{ post.descricao || '' }}
+  <a [routerLink]="['/receita', safePost.id]">
+    <img
+      [src]="postImageUrl"
+      class="post-image"
+      (error)="onPostImageError($event)" />
+  </a>
+
+  <div class="info-row">
+    <div class="recipe-name">{{ safePost.prato }}</div>
+
+    <div class="engagement">
+      <div class="like-section" (click)="toggleLike()">
+        <i
+          class="fa-heart-icon"
+          [ngClass]="isLiked ? 'fa-solid fa-heart liked' : 'fa-regular fa-heart'"></i>
+        <span class="likes-count">{{ totalLikes }}</span>
+      </div>
+
+      <div class="rating-row">
+        <i class="fa-solid fa-star star-icon"></i>
+        <span>{{ avgAval }} / 5 ({{ totalAval }})</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="post-description">
+    <span class="author-username-desc">@{{ safePost.nome_usuario }}</span>
+    {{ safePost.descricao || '' }}
+  </div>
+
+  <!-- ================== TAGS ================== -->
+  <div class="tags-wrapper">
+    <div
+      #tagsRow
+      class="tags-row"
+      [class.expanded]="expanded">
+
+      <!-- TAGS VISÍVEIS (linha limitada ou todas quando expandido) -->
+      <span
+        *ngFor="let tag of visibleTags"
+        class="tag-pill"
+        [style.color]="tag.cor">
+        {{ tag.nome }}
+      </span>
+
+      <!-- BOTÃO EXPANDIR / RECOLHER -->
+      <button
+        *ngIf="hasHiddenTags || expanded"
+        class="tag-toggle-btn"
+        type="button"
+        (click)="toggleExpand()">
+
+        <ng-container *ngIf="!expanded">
+          +{{ (safePost.tags?.length || 0) - visibleTags.length }}
+          <span class="arrow">▼</span>
+        </ng-container>
+
+        <ng-container *ngIf="expanded">
+          <span class="arrow">▲</span>
+        </ng-container>
+      </button>
+
+    </div>
+  </div>
+
 </div>

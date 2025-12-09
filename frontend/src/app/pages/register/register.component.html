@@ -1,86 +1,100 @@
+<div class="space-background">
+  <div class="stars-wrapper"></div>
+</div>
+
 <div class="container">
-  <div class="header">
-    <img src="./logo.jpg" alt="Logo Gastronauta" class="logo-small">
-    <h1 class="title">Crie sua conta</h1>
+
+  <div class="logo-box">
+    <img src="/logo.jpg" class="logo-small">
+    <div class="logo-glow"></div>
   </div>
 
-  <form class="auth-form" (ngSubmit)="onSubmit(registerForm)" #registerForm="ngForm">
-    <div class="form-group">
-      <input type="text"
-             class="form-control"
-             placeholder="Nome de usuário"
-             name="nome_usuario"
-             [(ngModel)]="userData.nome_usuario"
-             required
-            maxlength="20"
-             #nomeUsuarioInput="ngModel">
-    </div>
+  <div class="form-area">
 
-    <div class="form-group">
-      <input type="email"
-             class="form-control"
-             placeholder="Email"
-             name="email"
-             [(ngModel)]="userData.email"
-             required
-             email
-              maxlength="254"
-             #emailInput="ngModel">
-    </div>
+    <h1 class="title">CRIE SUA CONTA</h1>
 
-    <!-- CAMPO DE SENHA ATUALIZADO COM OS NOVOS EVENTOS -->
-    <div class="form-group">
-      <input [type]="showPassword ? 'text' : 'password'"
-             class="form-control"
-             placeholder="Senha"
-             name="senha"
-             [(ngModel)]="userData.senha"
-             (ngModelChange)="onPasswordChange($event)"
-             (focus)="passwordFocused = true"
-             required
-             #senhaInput="ngModel">
-      <i class="password-toggle-icon"
-         [class]="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
-         (click)="togglePasswordVisibility()"></i>
-    </div>
+    <form class="auth-form" (ngSubmit)="onSubmit(registerForm)" #registerForm="ngForm">
 
-    <!-- NOVO BLOCO: MEDIDOR DE FORÇA DA SENHA -->
-    <div class="password-strength-meter" *ngIf="passwordFocused">
-      <div class="strength-bar-container">
-        <div class="strength-bar"
-             [style.width.%]="passwordStrengthPercent"
-             [style.backgroundColor]="passwordStrengthColor">
-        </div>
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
       </div>
-      <ul class="requirements-list">
-        <li [class.valid]="passwordValidators.minLength">Mínimo 8 caracteres</li>
-        <li [class.valid]="passwordValidators.hasUppercase">1 letra maiúscula</li>
-        <li [class.valid]="passwordValidators.hasNumber">1 número</li>
-        <li [class.valid]="passwordValidators.hasSpecialChar">1 caractere especial (!@#...)</li>
-      </ul>
-    </div>
 
-    <!-- CAMPO DE CONFIRMAR SENHA -->
-    <div class="form-group">
-      <input [type]="showConfirmPassword ? 'text' : 'password'"
-             class="form-control"
-             placeholder="Confirmar senha"
-             name="confirmarSenha"
-             [(ngModel)]="userData.confirmarSenha"
-             required
-             #confirmarSenhaInput="ngModel">
-      <i class="password-toggle-icon"
-         [class]="showConfirmPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
-         (click)="toggleConfirmPasswordVisibility()"></i>
-    </div>
+      <!-- NOME DE USUÁRIO -->
+      <div class="form-group">
+        <input type="text"
+       class="form-control"
+       placeholder="Nome de usuário"
+       name="nome_usuario"
+       [(ngModel)]="userData.nome_usuario"
+       (input)="onNameInput($event)"
+       maxlength="20"
+       required>
 
-    <div *ngIf="errorMessage" class="error-message" style="text-align: center; width: 100%; margin-bottom: 15px;">
-      {{ errorMessage }}
-    </div>
+      </div>
 
-    <button type="submit" class="btn-submit">Cadastrar</button>
-  </form>
+      <!-- EMAIL -->
+      <div class="form-group">
+        <input type="email"
+               class="form-control"
+               placeholder="Email"
+               name="email"
+               [(ngModel)]="userData.email"
+               maxlength="254"
+               required>
+      </div>
 
-  <a routerLink="/home" class="back-link">Volte para a tela inicial</a>
-  <app-popup #registrationPopup (confirmAction)="onPopupConfirm()"></app-popup>
+      <!-- SENHA -->
+      <div class="form-group">
+        <input [type]="showPassword ? 'text' : 'password'"
+               class="form-control"
+               placeholder="Senha"
+               name="senha"
+               [(ngModel)]="userData.senha"
+               (ngModelChange)="onPasswordChange($event)"
+               (focus)="passwordFocused = true"
+               required>
+        <i class="password-toggle-icon"
+           [class]="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
+           (click)="togglePasswordVisibility()"></i>
+      </div>
+
+      <!-- MEDIDOR DE SENHA -->
+      <div class="password-strength-meter" *ngIf="passwordFocused">
+        <div class="strength-bar-container">
+          <div class="strength-bar"
+               [style.width.%]="passwordStrengthPercent"
+               [style.backgroundColor]="passwordStrengthColor"></div>
+        </div>
+
+        <ul class="requirements-list">
+          <li [class.valid]="passwordValidators.minLength">Mínimo 8 caracteres</li>
+          <li [class.valid]="passwordValidators.hasUppercase">1 letra maiúscula</li>
+          <li [class.valid]="passwordValidators.hasNumber">1 número</li>
+          <li [class.valid]="passwordValidators.hasSpecialChar">1 caractere especial (!@#...)</li>
+        </ul>
+      </div>
+
+      <!-- CONFIRMAR SENHA -->
+      <div class="form-group">
+        <input [type]="showConfirmPassword ? 'text' : 'password'"
+               class="form-control"
+               placeholder="Confirmar senha"
+               name="confirmarSenha"
+               [(ngModel)]="userData.confirmarSenha"
+               required>
+        <i class="password-toggle-icon"
+           [class]="showConfirmPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
+           (click)="toggleConfirmPasswordVisibility()"></i>
+      </div>
+
+      <button type="submit" class="btn-submit">Cadastrar</button>
+
+    </form>
+
+    <a routerLink="/login" class="back-link">Já tenho uma conta</a>
+    <a routerLink="/home" class="back-link">Voltar para a tela inicial</a>
+
+    <app-popup #registrationPopup (confirmAction)="onPopupConfirm()"></app-popup>
+  </div>
+
 </div>

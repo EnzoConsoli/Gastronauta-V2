@@ -7,55 +7,103 @@
   <div *ngIf="isLoading" class="loading">Carregando detalhes...</div>
   <div *ngIf="error" class="error">{{ error }}</div>
 
+  <!-- ======================================== -->
+  <!--   RECEITA CARREGADA                      -->
+  <!-- ======================================== -->
   <div *ngIf="recipe">
-    
-    <img [src]="fullImageUrl || '/assets/images/placeholder-recipe.png'" 
-         alt="Foto de {{ recipe.prato }}" 
-         class="recipe-image"
-         (error)="onImageError($event)">
-    
+
+    <img 
+      [src]="fullImageUrl || '/assets/images/placeholder-recipe.png'"
+      alt="Foto de {{ recipe.prato }}"
+      class="recipe-image"
+      (error)="onImageError($event)"
+    />
+
     <div class="details-section">
-      
+
+      <!-- TÍTULO + LIKE -->
       <div class="title-row">
         <h1 class="recipe-title">{{ recipe.prato }}</h1>
+
         <i class="like-icon"
            [ngClass]="isLiked ? 'fa-solid fa-heart liked' : 'fa-regular fa-heart'"
            (click)="toggleLike()">
-        </i> 
+        </i>
       </div>
-      
+
+      <!-- SEÇÃO DE AVALIAÇÃO -->
       <section class="rating-section">
         <div class="rating-display">
+
           <div class="rating-stars">
             <ng-container *ngFor="let i of [].constructor(fullStars)">
               <i class="fa-solid fa-star"></i>
             </ng-container>
+
             <i *ngIf="hasHalfStar" class="fa-solid fa-star-half-stroke"></i>
+
             <ng-container *ngFor="let i of [].constructor(emptyStars)">
               <i class="fa-regular fa-star empty-star"></i>
             </ng-container>
           </div>
+
           <div class="rating-info">
             <span class="rating-score">{{ ratingValue | number:'1.1-1' }} / 5</span>
             <div class="rating-count">({{ reviewCount }} avaliações)</div>
           </div>
+
         </div>
-        <button class="btn-avaliar" (click)="ratingModal.show()">
+
+        <button class="btn-avaliar" (click)="ratingModal?.show()">
           <i class="fa-regular fa-star"></i> Avalie essa receita
         </button>
       </section>
 
+      <!-- TAGS -->
+      <h2 class="section-title">Tags</h2>
+<div class="tags-detail">
+  <span
+    *ngFor="let tag of recipe.tags"
+    class="tag-item"
+    [style.--tag-color]="tag.cor"
+  >
+    {{ tag.nome }}
+  </span>
+  <!-- SE NÃO TIVER TAG NENHUMA -->
+  <p *ngIf="!recipe.tags || recipe.tags.length === 0" class="no-tags">
+    Nenhuma tag foi adicionada.
+  </p>
+
+  
+</div>
+
+
+      <!-- INFO DA RECEITA -->
       <div class="info-row">
-        <div class="info-item" *ngIf="recipe.dificuldade"><span class="info-label">Nível</span><span>{{ recipe.dificuldade }}</span></div>
-        <div class="info-item" *ngIf="recipe.custo"><span class="info-label">Custo</span><span>{{ recipe.custo }}</span></div>
-        <div class="info-item" *ngIf="recipe.tempo_preparo"><span class="info-label">Preparo</span><span>{{ recipe.tempo_preparo }}</span></div>
-        <div class="info-item" *ngIf="recipe.rendimento"><span class="info-label">Rende</span><span>{{ recipe.rendimento }}</span></div>
-        <div class="info-item" *ngIf="recipe.cozimento"><span class="info-label">Cozimento</span><span>{{ recipe.cozimento }}</span></div>
+        <div class="info-item" *ngIf="recipe.dificuldade">
+          <span class="info-label">Nível</span><span>{{ recipe.dificuldade }}</span>
+        </div>
+        <div class="info-item" *ngIf="recipe.custo">
+          <span class="info-label">Custo</span><span>{{ recipe.custo }}</span>
+        </div>
+        <div class="info-item" *ngIf="recipe.tempo_preparo">
+          <span class="info-label">Preparo</span><span>{{ recipe.tempo_preparo }}</span>
+        </div>
+        <div class="info-item" *ngIf="recipe.rendimento">
+          <span class="info-label">Rende</span><span>{{ recipe.rendimento }}</span>
+        </div>
+        <div class="info-item" *ngIf="recipe.cozimento">
+          <span class="info-label">Cozimento</span><span>{{ recipe.cozimento }}</span>
+        </div>
       </div>
 
-      <div class="author-section">
+      <!-- AUTOR -->
+      <div class="author-section" (click)="openAuthorProfile()" style="cursor:pointer;">
         <div class="avatar-container">
-          <img [src]="authorAvatarUrl" (error)="onImageError($event)" alt="Foto do Autor" class="profile-avatar">
+          <img [src]="authorAvatarUrl"
+               (error)="onImageError($event)"
+               class="profile-avatar"
+               alt="Autor">
         </div>
         <div class="author-details">
           <div class="author-label">Postado por:</div>
@@ -63,44 +111,52 @@
         </div>
       </div>
 
+      <!-- BOTÕES DO DONO -->
       <div *ngIf="isOwner" class="action-buttons">
         <button class="btn-action" (click)="editarReceita()">Editar Receita</button>
         <button class="btn-action btn-delete" (click)="excluirReceita()">Excluir Receita</button>
       </div>
 
+      <!-- DESCRIÇÃO -->
       <div *ngIf="recipe.descricao">
         <h2 class="section-title">Descrição:</h2>
         <p class="preparation-steps">{{ recipe.descricao }}</p>
       </div>
 
+      <!-- INGREDIENTES -->
       <h2 class="section-title">Ingredientes:</h2>
       <ul class="ingredients-list">
         <li *ngFor="let item of recipe.ingredientsList">{{ item }}</li>
       </ul>
 
+      <!-- MODO DE PREPARO -->
       <h2 class="section-title">Modo de preparo:</h2>
       <p class="preparation-steps">{{ recipe.preparacao }}</p>
 
-    </div> 
-  </div> 
-</div> 
+    </div>
+  </div>
+</div>
 
 <!-- ========================================================= -->
-<!-- 🟣 SEÇÃO DE COMENTÁRIOS -->
+<!-- 🟣 AVALIAÇÕES -->
 <!-- ========================================================= -->
 
 <div class="comments-section">
-  <h2 class="section-title">Comentários</h2>
+  <h2 class="section-title">Avaliações</h2>
 
   <div *ngFor="let c of comentarios" class="comment-item">
 
+    <!-- AVATAR -->
     <img 
-      [src]="c.foto_perfil_url ? backend + c.foto_perfil_url : 'assets/canvo.png'" 
+      [src]="c.foto_perfil_url || 'assets/canvo.png'"
       class="comment-avatar"
-      alt="Avatar de {{ c.nome_usuario }}"
+      (error)="onImageError($event)"
+      alt="Avatar"
     />
 
     <div class="comment-content">
+
+      <!-- HEADER -->
       <div class="comment-header">
         <span class="comment-user">@{{ c.nome_usuario }}</span>
 
@@ -113,71 +169,104 @@
         <span class="comment-date">{{ formatarData(c.data_avaliacao) }}</span>
       </div>
 
-      <div class="comment-text">
-        {{ c.comentario }}
-      </div>
+      <!-- TEXTO -->
+      <div class="comment-text">{{ c.comentario }}</div>
 
+      <!-- AÇÕES -->
       <div class="comment-actions">
 
+        <!-- LIKE -->
         <button class="comment-action-btn" (click)="toggleLikeComment(c)">
-          <i class="fa-thumbs-up" 
-             [class.fa-solid]="c.liked" 
+          <i class="fa-thumbs-up"
+             [class.fa-solid]="c.liked"
              [class.fa-regular]="!c.liked"></i>
-          <span>{{ c.likes || 0 }}</span>
+          <span>{{ c.likes }}</span>
         </button>
 
+        <!-- DISLIKE -->
         <button class="comment-action-btn" (click)="toggleDislikeComment(c)">
-          <i class="fa-thumbs-down" 
-             [class.fa-solid]="c.disliked" 
+          <i class="fa-thumbs-down"
+             [class.fa-solid]="c.disliked"
              [class.fa-regular]="!c.disliked"></i>
-          <span>{{ c.dislikes || 0 }}</span>
+          <span>{{ c.dislikes }}</span>
         </button>
 
+        <!-- RESPONDER -->
         <button class="comment-action-btn" (click)="toggleReplyBox(c)">
-          <i class="fa-regular fa-comment"></i>
-          Responder
+          <i class="fa-regular fa-comment"></i> Responder
         </button>
 
-        <!-- BOTÃO DE EXCLUIR SÓ DO DONO -->
+        <!-- EXCLUIR (SOMENTE SE FOR DONO DA AVALIAÇÃO) -->
         <button 
           *ngIf="c.usuario_id === currentUserId"
           class="comment-action-btn delete-comment"
-          (click)="deleteComment(c)"
-        >
+          (click)="deleteComment(c)">
           <i class="fa-solid fa-trash"></i> Excluir
         </button>
 
       </div>
 
+      <!-- CAIXA DE RESPOSTA -->
       <div class="comment-reply-box" *ngIf="c.showReplyBox">
-        <textarea
-          [(ngModel)]="c.replyText"
-          rows="2"
-          placeholder="Escreva uma resposta..."
-        ></textarea>
+        <textarea [(ngModel)]="c.replyText" rows="2" placeholder="Escreva uma resposta..."></textarea>
         <button class="btn-reply" (click)="sendReply(c)">Enviar</button>
       </div>
 
+      <!-- RESPOSTAS -->
       <div class="comment-replies" *ngIf="c.replies?.length">
-        <div *ngFor="let r of c.replies" class="comment-reply">
-          <span class="reply-user">Você</span>
-          <span class="reply-text">{{ r }}</span>
+
+        <div *ngFor="let r of c.replies" class="reply-item">
+
+          <!-- AVATAR -->
+          <img class="reply-avatar"
+               [src]="r.foto_perfil_url ? BACKEND_URL + r.foto_perfil_url : 'assets/canvo.png'"
+               (error)="onImageError($event)" />
+
+          <div class="reply-content">
+
+            <!-- HEADER: nome + data + botão excluir -->
+            <div class="reply-header">
+
+              <div class="reply-header-left">
+                <span class="reply-user">@{{ r.nome_usuario }}</span>
+                <span class="reply-date">{{ formatarData(r.data_resposta || r.data) }}</span>
+              </div>
+
+              <!-- BOTÃO EXCLUIR NA DIREITA -->
+              <button class="reply-delete-btn"
+                      *ngIf="r.usuario_id === currentUserId"
+                      (click)="deleteReply(c, r)">
+                <i class="fa-solid fa-trash"></i> Excluir
+              </button>
+
+            </div>
+
+            <!-- TEXTO -->
+            <p class="reply-text">{{ r.texto }}</p>
+
+          </div>
+
         </div>
+
       </div>
 
     </div>
-
   </div>
 
   <p *ngIf="comentarios.length === 0" class="no-comments">
-    Ninguém comentou ainda. Seja o primeiro!
+    Ninguém avaliou ainda. Seja o primeiro!
   </p>
 </div>
 
+<!-- POPUP DE EXCLUSÃO DA RECEITA / AVALIAÇÕES / RESPOSTAS -->
 <app-popup
   #deleteConfirmPopup
   (confirmAction)="onPopupConfirm()"
   (cancelAction)="onPopupCancel()">
 </app-popup>
 
-<app-rating-modal #ratingModal (onPublish)="publicarAvaliacao($event)"></app-rating-modal>
+<!-- ÚNICO MODAL DE AVALIAÇÃO -->
+<app-rating-modal 
+  #ratingModal 
+  (onPublish)="publicarAvaliacao($event)">
+</app-rating-modal>

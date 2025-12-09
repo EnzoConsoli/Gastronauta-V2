@@ -10,6 +10,7 @@
       <div class="image-preview-container">
         <img [src]="currentImageUrl || '/assets/images/placeholder-recipe.png'" alt="Preview da Receita" class="image-preview">
       </div>
+      
 
       <div class="form-group">
         <label for="imagemReceita" class="file-label">Trocar Imagem da Receita</label>
@@ -73,6 +74,12 @@
           <input id="cozimento" type="text" formControlName="cozimento">
         </div>
       </div>
+      <h2>Tags da Receita</h2>
+
+<tags-selector
+  [(selected)]="selectedTags">
+</tags-selector>
+
 
       <div class="button-group">
         <button type="button" class="btn btn-secondary" [routerLink]="['/receita', recipeId]">Cancelar</button>

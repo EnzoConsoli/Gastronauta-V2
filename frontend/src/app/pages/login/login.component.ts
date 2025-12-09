@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, AfterViewInit, ElementRef, Renderer2 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -9,18 +9,46 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']  
+  styleUrls: ['./login.component.css']
 })
-export class LoginComponent {
-  credentials = {
-    email: '',
-    senha: ''
-  };
+export class LoginComponent implements AfterViewInit {
 
+  credentials = { email: '', senha: '' };
   showPassword = false;
-  errorMessage: string | null = null; 
+  errorMessage: string | null = null;
 
-  constructor(private authService: AuthService, private router: Router) { }
+  constructor(
+    private el: ElementRef,
+    private renderer: Renderer2,
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  ngAfterViewInit(): void {
+    this.generateStars(140);
+  }
+
+  getElement(selector: string): HTMLElement {
+    return this.el.nativeElement.querySelector(selector);
+  }
+
+  generateStars(amount: number) {
+    const wrapper = this.getElement('.stars-wrapper');
+    if (!wrapper) return;
+
+    for (let i = 0; i < amount; i++) {
+      const star = this.renderer.createElement('div');
+      this.renderer.addClass(star, 'star-img');
+
+      this.renderer.setStyle(star, 'left', `${Math.random() * 100}%`);
+      this.renderer.setStyle(star, 'top', `${Math.random() * 100}%`);
+      this.renderer.setStyle(star, 'width', `${10 + Math.random() * 12}px`);
+      this.renderer.setStyle(star, 'height', star.style.width);
+      this.renderer.setStyle(star, 'animationDelay', `${Math.random() * 3}s`);
+
+      this.renderer.appendChild(wrapper, star);
+    }
+  }
 
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
@@ -36,26 +64,15 @@ export class LoginComponent {
 
     this.authService.login(this.credentials).subscribe({
       next: (response) => {
-
-        console.log('Login bem-sucedido, token recebido:', response.token);
-        
-        // 🔥 Salva o token
         localStorage.setItem('token', response.token);
-
-        // 🔥 Salva o ID do usuário (correção DEFINITIVA)
         localStorage.setItem('user_id', String(response.id));
-
-        // 🔥 Salva também o nome de usuário (opcional mas recomendado)
         if (response.nome_usuario) {
           localStorage.setItem('username', response.nome_usuario);
         }
-
-        // Navega para o feed
         this.router.navigate(['/feed']);
       },
-
       error: (err) => {
-        this.errorMessage = err.error?.mensagem || 'Credenciais inválidas. Tente novamente.';
+        this.errorMessage = err.error?.mensagem || 'Credenciais inválidas.';
       }
     });
   }

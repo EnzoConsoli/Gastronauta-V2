@@ -61,6 +61,18 @@ router.get('/feed', authMiddleware, async (req, res) => {
       ORDER BY r.data_postagem DESC
     `, [userId]);
 
+    for (const r of results) {
+  const [tags] = await db.query(`
+    SELECT t.id, t.nome
+    FROM receita_tags rt
+    JOIN tags t ON t.id = rt.tag_id
+    WHERE rt.receita_id = ?
+  `, [r.id]);
+
+  r.tags = tags;
+}
+
+
     res.json({ receitas: results, page: 1, hasMore: false });
 
   } catch (error) {
@@ -75,7 +87,8 @@ router.get('/feed', authMiddleware, async (req, res) => {
 router.post('/', authMiddleware, upload.single('imagemReceita'), async (req, res) => {
   const {
     prato, ingredientes, preparacao, descricao,
-    tempo_preparo, dificuldade, custo, rendimento, cozimento
+    tempo_preparo, dificuldade, custo, rendimento, cozimento,
+    tags // ← vem do Angular como string JSON
   } = req.body;
 
   const userId = req.user.id;
@@ -87,6 +100,7 @@ router.post('/', authMiddleware, upload.single('imagemReceita'), async (req, res
   }
 
   try {
+    // 1) Criar receita
     const [result] = await db.query(`
       INSERT INTO receitas (
         usuario_id, prato, ingredientes, preparacao, descricao,
@@ -98,7 +112,24 @@ router.post('/', authMiddleware, upload.single('imagemReceita'), async (req, res
       rendimento || null, url_imagem, cozimento || null
     ]);
 
-    res.status(201).json({ mensagem: 'Receita criada!', receitaId: result.insertId });
+    const receitaId = result.insertId;
+
+    // 2) Inserir TAGS, se existirem
+    if (tags) {
+      const tagList = JSON.parse(tags); // ex: [1,4,7]
+
+      for (const tagId of tagList) {
+        await db.query(
+          'INSERT INTO receita_tags (receita_id, tag_id) VALUES (?, ?)',
+          [receitaId, tagId]
+        );
+      }
+    }
+
+    res.status(201).json({ 
+      mensagem: 'Receita criada!',
+      receitaId 
+    });
 
   } catch (error) {
     console.error(error);
@@ -305,8 +336,20 @@ router.get('/:id', authMiddleware, async (req, res) => {
     `, [userId, id]);
 
     if (!rows[0]) return res.status(404).json({ mensagem: 'Receita não encontrada.' });
+    
+    const receita = rows[0];
 
-    res.json(rows[0]);
+    // === 🔥 BUSCAR TAGS DA RECEITA ===
+    const [tagRows] = await db.query(`
+      SELECT t.id, t.nome
+      FROM receita_tags rt
+      JOIN tags t ON t.id = rt.tag_id
+      WHERE rt.receita_id = ?
+    `, [id]);
+
+    receita.tags = tagRows; // <-- ADICIONAR TAGS AO OBJETO
+
+    res.json(receita);
 
   } catch (error) {
     console.error(error);
@@ -347,33 +390,35 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // =====================================================================
 // ATUALIZAR RECEITA
 // =====================================================================
+// =====================================================================
+// ATUALIZAR RECEITA
+// =====================================================================
 router.put('/:id', authMiddleware, upload.single('imagemReceita'), async (req, res) => {
   const id = req.params.id;
   const userId = req.user.id;
 
   const {
     prato, ingredientes, preparacao, descricao,
-    tempo_preparo, dificuldade, custo, rendimento, cozimento
+    tempo_preparo, dificuldade, custo, rendimento, cozimento,
+    tags
   } = req.body;
 
   try {
-    const [rows] = await db.query(
+    const [[rows]] = await db.query(
       'SELECT usuario_id, url_imagem FROM receitas WHERE id = ?',
       [id]
     );
 
-    if (!rows[0]) return res.status(404).json({ mensagem: 'Receita não encontrada.' });
+    if (!rows) return res.status(404).json({ mensagem: 'Receita não encontrada.' });
+    if (rows.usuario_id !== userId) return res.status(403).json({ mensagem: 'Sem permissão.' });
 
-    if (rows[0].usuario_id !== userId)
-      return res.status(403).json({ mensagem: 'Sem permissão.' });
-
-    let url_imagem = rows[0].url_imagem;
+    let url_imagem = rows.url_imagem;
 
     if (req.file) {
       url_imagem = `/uploads/${req.file.filename}`;
 
-      if (rows[0].url_imagem) {
-        const oldImg = path.join(__dirname, '../public', rows[0].url_imagem);
+      if (rows.url_imagem) {
+        const oldImg = path.join(__dirname, '../public', rows.url_imagem);
         fs.unlink(oldImg, () => {});
       }
     }
@@ -390,6 +435,24 @@ router.put('/:id', authMiddleware, upload.single('imagemReceita'), async (req, r
       url_imagem, cozimento || null, id
     ]);
 
+    // ================================
+    // ATUALIZAR TAGS
+    // ================================
+    if (tags) {
+      const tagList = JSON.parse(tags);
+
+      // Remove tags antigas
+      await db.query('DELETE FROM receita_tags WHERE receita_id = ?', [id]);
+
+      // Insere tags novas
+      for (const tagId of tagList) {
+        await db.query(
+          'INSERT INTO receita_tags (receita_id, tag_id) VALUES (?, ?)',
+          [id, tagId]
+        );
+      }
+    }
+
     res.json({ mensagem: 'Receita atualizada!' });
 
   } catch (error) {
@@ -397,6 +460,7 @@ router.put('/:id', authMiddleware, upload.single('imagemReceita'), async (req, r
     res.status(500).json({ mensagem: 'Erro ao atualizar receita.' });
   }
 });
+
 
 // =====================================================================
 // CURTIR / DESCURTIR RECEITA
@@ -437,195 +501,6 @@ router.post('/:id/like', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ mensagem: 'Erro ao curtir.' });
-  }
-});
-
-// =====================================================================
-// COMENTÁRIOS – LISTAR (com likes/dislikes)
-// =====================================================================
-router.get('/:id/comments', authMiddleware, async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = 20;
-  const offset = (page - 1) * limit;
-  const userId = req.user.id;
-
-  try {
-    const [comments] = await db.query(`
-      SELECT
-        c.id,
-        c.texto AS comentario,
-        c.data_comentario,
-        c.usuario_id,
-
-        u.nome_usuario,
-        u.foto_perfil_url,
-
-        -- contagem de likes
-        (SELECT COUNT(*) FROM comentario_reacoes cr 
-          WHERE cr.comentario_id = c.id AND cr.tipo = 'like') AS likes,
-
-        -- contagem de dislikes
-        (SELECT COUNT(*) FROM comentario_reacoes cr 
-          WHERE cr.comentario_id = c.id AND cr.tipo = 'dislike') AS dislikes,
-
-        -- reação do usuário logado (like, dislike ou NULL)
-        (SELECT cr.tipo FROM comentario_reacoes cr 
-          WHERE cr.comentario_id = c.id AND cr.usuario_id = ? LIMIT 1) AS minhaReacao
-
-      FROM comentarios c
-      JOIN usuarios u ON c.usuario_id = u.id
-      WHERE c.receita_id = ?
-      ORDER BY c.data_comentario DESC
-      LIMIT ? OFFSET ?
-    `, [userId, req.params.id, limit, offset]);
-
-    res.json({
-      comments,
-      page,
-      hasMore: comments.length === limit
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensagem: 'Erro ao carregar comentários.' });
-  }
-});
-
-// =====================================================================
-// POSTAR COMENTÁRIO
-// =====================================================================
-router.post('/:id/comment', authMiddleware, async (req, res) => {
-  const { comentario } = req.body;
-  const receitaId = req.params.id;
-  const userId = req.user.id;
-
-  if (!comentario) return res.status(400).json({ mensagem: 'Comentário vazio.' });
-
-  try {
-    const [result] = await db.query(`
-      INSERT INTO comentarios (receita_id, usuario_id, texto)
-      VALUES (?, ?, ?)
-    `, [receitaId, userId, comentario]);
-
-    const [[novo]] = await db.query(`
-      SELECT 
-        c.id,
-        c.texto AS comentario,
-        c.data_comentario,
-        c.usuario_id,
-        u.nome_usuario,
-        u.foto_perfil_url,
-        0 AS likes,
-        0 AS dislikes,
-        NULL AS minhaReacao
-      FROM comentarios c
-      JOIN usuarios u ON u.id = c.usuario_id
-      WHERE c.id = ?
-    `, [result.insertId]);
-
-    res.json({ comentario: novo });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensagem: 'Erro ao postar comentário.' });
-  }
-});
-
-// =====================================================================
-// EXCLUIR COMENTÁRIO
-// =====================================================================
-router.delete('/comments/:commentId', authMiddleware, async (req, res) => {
-  const commentId = req.params.commentId;
-  const userId = req.user.id;
-
-  try {
-    const [[comentario]] = await db.query(
-      'SELECT usuario_id FROM comentarios WHERE id = ?',
-      [commentId]
-    );
-
-    if (!comentario) {
-      return res.status(404).json({ mensagem: 'Comentário não encontrado.' });
-    }
-
-    if (comentario.usuario_id !== userId) {
-      return res.status(403).json({ mensagem: 'Sem permissão para excluir este comentário.' });
-    }
-
-    // remove reações ligadas a esse comentário
-    await db.query('DELETE FROM comentario_reacoes WHERE comentario_id = ?', [commentId]);
-    await db.query('DELETE FROM comentarios WHERE id = ?', [commentId]);
-
-    res.json({ mensagem: 'Comentário excluído com sucesso.' });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensagem: 'Erro ao excluir comentário.' });
-  }
-});
-
-// =====================================================================
-// LIKE / DISLIKE EM COMENTÁRIO
-// =====================================================================
-router.post('/comments/:commentId/react', authMiddleware, async (req, res) => {
-  const commentId = req.params.commentId;
-  const userId = req.user.id;
-  const { tipo } = req.body; // 'like' ou 'dislike'
-
-  if (!['like', 'dislike'].includes(tipo)) {
-    return res.status(400).json({ mensagem: 'Tipo de reação inválido.' });
-  }
-
-  try {
-    const [[existente]] = await db.query(
-      'SELECT * FROM comentario_reacoes WHERE comentario_id = ? AND usuario_id = ?',
-      [commentId, userId]
-    );
-
-    let novaReacao = null;
-
-    if (!existente) {
-      // não existe ainda -> cria
-      await db.query(
-        'INSERT INTO comentario_reacoes (comentario_id, usuario_id, tipo) VALUES (?, ?, ?)',
-        [commentId, userId, tipo]
-      );
-      novaReacao = tipo;
-    } else if (existente.tipo === tipo) {
-      // mesma reação -> remove (toggle off)
-      await db.query(
-        'DELETE FROM comentario_reacoes WHERE id = ?',
-        [existente.id]
-      );
-      novaReacao = null;
-    } else {
-      // reação diferente -> atualiza
-      await db.query(
-        'UPDATE comentario_reacoes SET tipo = ? WHERE id = ?',
-        [tipo, existente.id]
-      );
-      novaReacao = tipo;
-    }
-
-    const [[contagens]] = await db.query(
-      `SELECT
-         SUM(tipo = 'like')   AS likes,
-         SUM(tipo = 'dislike') AS dislikes
-       FROM comentario_reacoes
-       WHERE comentario_id = ?`,
-      [commentId]
-    );
-
-    res.json({
-      mensagem: 'Reação registrada.',
-      likes: contagens.likes || 0,
-      dislikes: contagens.dislikes || 0,
-      minhaReacao: novaReacao
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensagem: 'Erro ao registrar reação.' });
   }
 });
 
@@ -671,17 +546,14 @@ router.post('/:id/avaliar', authMiddleware, async (req, res) => {
 });
 
 // =====================================================================
-// AVALIAÇÕES - LISTAR
+// AVALIAÇÕES - LISTAR COMPLETO (com likes + dislikes + respostas)
 // =====================================================================
-router.get('/:id/avaliacoes', async (req, res) => {
-  try {
-    const [stats] = await db.query(`
-      SELECT COUNT(*) AS totalAvaliacoes, AVG(nota) AS mediaNotas
-      FROM avaliacoes
-      WHERE receita_id = ?
-    `, [req.params.id]);
+router.get('/:id/avaliacoes', authMiddleware, async (req, res) => {
+  const receitaId = req.params.id;
+  const userId = req.user.id;
 
-    const [comentarios] = await db.query(`
+  try {
+    const [avaliacoes] = await db.query(`
       SELECT
         a.id,
         a.usuario_id,
@@ -690,19 +562,139 @@ router.get('/:id/avaliacoes', async (req, res) => {
         a.data_avaliacao,
 
         u.nome_usuario,
-        u.foto_perfil_url
+        u.foto_perfil_url,
+
+        (SELECT COUNT(*) FROM avaliacao_reacoes WHERE avaliacao_id = a.id AND tipo = 'like') AS likes,
+        (SELECT COUNT(*) FROM avaliacao_reacoes WHERE avaliacao_id = a.id AND tipo = 'dislike') AS dislikes,
+
+        (SELECT tipo FROM avaliacao_reacoes WHERE avaliacao_id = a.id AND usuario_id = ? LIMIT 1) AS minhaReacao
 
       FROM avaliacoes a
-      JOIN usuarios u ON a.usuario_id = u.id
-      WHERE a.receita_id = ? AND a.comentario IS NOT NULL
+      JOIN usuarios u ON u.id = a.usuario_id
+      WHERE a.receita_id = ?
       ORDER BY a.data_avaliacao DESC
-    `, [req.params.id]);
+    `, [userId, receitaId]);
 
-    res.json({ stats: stats[0], comentarios });
+    for (let a of avaliacoes) {
+      const [resp] = await db.query(`
+        SELECT r.*, u.nome_usuario, u.foto_perfil_url
+        FROM avaliacao_respostas r
+        JOIN usuarios u ON u.id = r.usuario_id
+        WHERE r.avaliacao_id = ?
+        ORDER BY r.data_resposta ASC
+      `, [a.id]);
+
+      a.respostas = resp;
+    }
+
+    const [[stats]] = await db.query(`
+      SELECT 
+        COUNT(*) AS totalAvaliacoes,
+        AVG(nota) AS mediaNotas
+      FROM avaliacoes
+      WHERE receita_id = ?
+    `, [receitaId]);
+
+    res.json({ stats, avaliacoes });
 
   } catch (error) {
     console.error(error);
     res.status(500).json({ mensagem: 'Erro ao listar avaliações.' });
+  }
+});
+
+// =====================================================================
+// RESPONDER UMA AVALIAÇÃO
+// =====================================================================
+router.post('/avaliacao/:avaliacaoId/responder', authMiddleware, async (req, res) => {
+  const avaliacaoId = req.params.avaliacaoId;
+  const userId = req.user.id;
+  const { texto } = req.body;
+
+  if (!texto || texto.trim() === '')
+    return res.status(400).json({ mensagem: 'Resposta vazia.' });
+
+  try {
+    await db.query(`
+      INSERT INTO avaliacao_respostas (avaliacao_id, usuario_id, texto)
+      VALUES (?, ?, ?)
+    `, [avaliacaoId, userId, texto]);
+
+    const [[nova]] = await db.query(`
+      SELECT r.*, u.nome_usuario, u.foto_perfil_url
+      FROM avaliacao_respostas r
+      JOIN usuarios u ON u.id = r.usuario_id
+      WHERE r.id = LAST_INSERT_ID()
+    `);
+
+    res.json({
+      mensagem: 'Resposta enviada!',
+      novaResposta: nova
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensagem: 'Erro ao responder avaliação.' });
+  }
+});
+
+// =====================================================================
+// LIKE / DISLIKE EM AVALIAÇÃO
+// =====================================================================
+router.post('/avaliacao/:avaliacaoId/react', authMiddleware, async (req, res) => {
+  const avaliacaoId = req.params.avaliacaoId;
+  const userId = req.user.id;
+  const { tipo } = req.body;
+
+  if (!['like', 'dislike'].includes(tipo))
+    return res.status(400).json({ mensagem: 'Tipo inválido.' });
+
+  try {
+    const [[exist]] = await db.query(`
+      SELECT * FROM avaliacao_reacoes 
+      WHERE avaliacao_id = ? AND usuario_id = ?
+    `, [avaliacaoId, userId]);
+
+    let novaReacao = null;
+
+    if (!exist) {
+      await db.query(`
+        INSERT INTO avaliacao_reacoes (avaliacao_id, usuario_id, tipo)
+        VALUES (?, ?, ?)
+      `, [avaliacaoId, userId, tipo]);
+
+      novaReacao = tipo;
+
+    } else if (exist.tipo === tipo) {
+      await db.query('DELETE FROM avaliacao_reacoes WHERE id = ?', [exist.id]);
+      novaReacao = null;
+
+    } else {
+      await db.query(`
+        UPDATE avaliacao_reacoes SET tipo = ? WHERE id = ?
+      `, [tipo, exist.id]);
+
+      novaReacao = tipo;
+    }
+
+    const [[count]] = await db.query(`
+      SELECT
+        SUM(tipo = 'like')   AS likes,
+        SUM(tipo = 'dislike') AS dislikes
+      FROM avaliacao_reacoes
+      WHERE avaliacao_id = ?
+    `, [avaliacaoId]);
+
+    res.json({
+      liked: novaReacao === 'like',
+      disliked: novaReacao === 'dislike',
+      likes: count.likes || 0,
+      dislikes: count.dislikes || 0
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensagem: 'Erro ao reagir avaliação.' });
   }
 });
 
@@ -725,6 +717,8 @@ router.delete('/:id/avaliacoes/:avaliacaoId', authMiddleware, async (req, res) =
     if (avaliacao.usuario_id !== userId)
       return res.status(403).json({ mensagem: 'Sem permissão.' });
 
+    await db.query('DELETE FROM avaliacao_respostas WHERE avaliacao_id = ?', [avaliacaoId]);
+    await db.query('DELETE FROM avaliacao_reacoes WHERE avaliacao_id = ?', [avaliacaoId]);
     await db.query('DELETE FROM avaliacoes WHERE id = ?', [avaliacaoId]);
 
     res.json({ mensagem: 'Avaliação removida!' });
@@ -735,44 +729,31 @@ router.delete('/:id/avaliacoes/:avaliacaoId', authMiddleware, async (req, res) =
   }
 });
 
-// =====================================================================
-// 🔍 (ANTIGA) BUSCA – MANTIDA APENAS SE VOCÊ AINDA USA EM ALGUM LUGAR
-// =====================================================================
-router.get('/search', authMiddleware, async (req, res) => {
-  const q = (req.query.q || '').toString().trim();
-
-  if (!q) {
-    return res.json([]);
-  }
-  const like = `%${q}%`;
+router.delete('/avaliacao/resposta/:id', authMiddleware, async (req, res) => {
+  const id = req.params.id;
+  const userId = req.user.id;
 
   try {
-    const [rows] = await db.query(
-      `
-      SELECT
-        r.id,
-        r.prato,
-        r.descricao,
-        r.url_imagem,
-        r.usuario_id,
-        u.nome_usuario
-      FROM receitas AS r
-      JOIN usuarios AS u ON r.usuario_id = u.id
-      WHERE
-        r.prato       LIKE ?
-        OR r.descricao    LIKE ?
-        OR r.ingredientes LIKE ?
-      ORDER BY r.data_postagem DESC
-      LIMIT 20
-      `,
-      [like, like, like]
+    const [[resp]] = await db.query(
+      'SELECT usuario_id FROM avaliacao_respostas WHERE id = ?',
+      [id]
     );
 
-    res.json(rows);
+    if (!resp)
+      return res.status(404).json({ mensagem: 'Resposta não encontrada.' });
+
+    if (resp.usuario_id !== userId)
+      return res.status(403).json({ mensagem: 'Sem permissão.' });
+
+    await db.query('DELETE FROM avaliacao_respostas WHERE id = ?', [id]);
+
+    res.json({ mensagem: 'Resposta excluída!' });
+
   } catch (error) {
-    console.error('Erro na busca de receitas:', error);
-    res.status(500).json({ mensagem: 'Erro ao buscar receitas.' });
+    console.error(error);
+    res.status(500).json({ mensagem: 'Erro ao excluir resposta.' });
   }
 });
+
 
 module.exports = router;

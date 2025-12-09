@@ -3,7 +3,7 @@
   background: #0f1526;
   border: 1px solid #2a3348;
   border-radius: 10px;
-  margin: 35px auto;
+  margin: 10px auto;
   padding-bottom: 12px;
   font-family: 'Poppins', sans-serif;
 }
@@ -26,15 +26,21 @@
 
 .author-username {
   font-weight: 600;
+  font-size: 15px;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.author-username:hover {
+  text-decoration: underline;
 }
 
 /* Image */
 .post-image {
   width: 100%;
   max-width: 600px;
-  aspect-ratio: 3/2;
+  aspect-ratio: 3 / 2;
   object-fit: cover;
-  border-radius: 5px;
   background: #1d273a;
 }
 
@@ -58,18 +64,18 @@
   gap: 14px;
 }
 
-/* ❤️ LIKE SECTION - AQUI ENTRA O ESPAÇAMENTO */
+/* ❤️ LIKE SECTION */
 .like-section {
   display: flex;
   align-items: center;
-  gap: 6px; /* <-- espaçamento entre ícone e número */
+  gap: 6px;
   cursor: pointer;
 }
 
 .fa-heart-icon {
   font-size: 22px;
   cursor: pointer;
-  transition: .2s;
+  transition: 0.2s;
 }
 
 .fa-heart-icon:hover {
@@ -77,7 +83,7 @@
 }
 
 .liked {
-  color: #ED4956;
+  color: #ed4956;
 }
 
 /* ⭐ RATING */
@@ -95,7 +101,7 @@
 
 /* Descrição */
 .post-description {
-  padding: 0 14px 14px;
+  padding: 0 14px 6px;
   font-size: 14px;
   margin-top: 4px;
 }
@@ -104,21 +110,72 @@
   font-weight: 600;
   margin-right: 5px;
 }
-.post-header {
+
+/* ================= TAGS ================= */
+
+.tags-wrapper {
+  padding: 0 14px 6px;
+}
+
+.tags-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-.author-username {
+/* Quando expandido, deixa quebrar linha normalmente */
+.tags-row.expanded {
+  flex-wrap: wrap;
+  overflow: visible;
+  white-space: normal;
+}
+
+/* Cápsula da tag */
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 4px 10px;
+  margin-right: 2px;
+
+  background: transparent;
+  border: 2px solid currentColor; /* borda na mesma cor do texto */
+  color: inherit;
+
+  font-size: 0.75rem;
   font-weight: 600;
-  font-size: 15px;
-  color: #ffffff;
-  text-decoration: none;
+  border-radius: 999px;
+
+  transition: 0.2s ease;
 }
 
-.author-username:hover {
-  text-decoration: underline;
+/* Hover opcional */
+.tag-pill:hover {
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
 }
 
+/* Botão +N / seta */
+.tag-toggle-btn {
+  margin-left: 4px;
+  padding: 0 6px;
+  height: 22px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+
+  background: transparent;
+  border: none;
+  color: #b0b5c5;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.tag-toggle-btn .arrow {
+  font-size: 0.7rem;
+}

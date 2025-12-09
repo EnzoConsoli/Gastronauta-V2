@@ -1,97 +1,122 @@
-/* Importa a fonte 'Poppins' do Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
-
-/*
-  A pseudo-classe :host se refere ao elemento raiz do próprio componente.
-  Usamos ela para definir o fundo e centralizar o conteúdo,
-  criando o layout principal da página.
-*/
 :host {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  height: 100%; /* Garante que o componente ocupe toda a altura da tela */
-  background-color: #12182B; /* Azul bem escuro, quase preto */
-  color: #FFFFFF;
+  height: 100vh;
+  background: radial-gradient(circle at center, #12182B 10%, #0B0F1A 100%);
+  overflow: hidden;
+  position: relative;
   font-family: 'Poppins', sans-serif;
+  color: white;
+}
+
+/* ====== FUNDO ====== */
+.space-background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* ====== ESTRELAS ====== */
+.stars-wrapper {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.star-img {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background-image: url('/stars.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.65;
+  animation: twinkle 3s infinite ease-in-out;
+}
+
+@keyframes twinkle {
+  0%,100% { opacity: 0.3; transform: scale(1); }
+  50%     { opacity: 1; transform: scale(1.3); }
+}
+
+/* ====== CONTEÚDO CENTRAL ====== */
+.container {
+  z-index: 10;
   text-align: center;
 }
 
-/* O container principal que segura os elementos */
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  max-width: 320px;
-  width: 100%;
+.logo-box {
+  animation: float 4s ease-in-out infinite;
+  position: relative;
 }
 
-/* Estilo da Logo */
 .logo {
-  width: 200px;
-  height: auto;
-  margin-bottom: 20px;
+  width: 260px;
+  filter: drop-shadow(0 0 20px #ffffffbb);
 }
 
-/* Estilo do Título "GASTRONAUTA" */
+.logo-glow {
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, #ffffff40 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  filter: blur(45px);
+  z-index: -1;
+}
+
 .title {
-  color: #FFFFFF; /* Cor explícita para o título */
-  font-size: 2.2rem;
+  font-size: 2.8rem;
+  margin-top: 10px;
+  letter-spacing: 4px;
   font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin: 0;
+  position: relative;
 }
 
-/* Estilo do Tagline (texto secundário) */
+.title-glow {
+  position: absolute;
+  width: 900px;
+  height: 80px;
+  background: radial-gradient(circle, #ffffff22 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  filter: blur(50px);
+  z-index: -1;
+}
+
 .tagline {
-  color: #a0aec0; /* Cinza claro para o tagline */
-  margin-top: 15px;
+  color: #dcdfe7;
   margin-bottom: 40px;
-  font-size: 1rem;
-  font-weight: 400;
-  max-width: 250px;
-  line-height: 1.5;
 }
 
-/* Estilo base para os botões */
 .btn {
   display: block;
-  width: 100%;
-  padding: 14px 20px;
-  margin-top: 15px;
-  border-radius: 25px; /* Bordas bem arredondadas */
-  border: 2px solid #FFFFFF;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
+  width: 240px;
+  padding: 12px;
+  margin: 10px auto;
+  border-radius: 30px;
+  border: 2px solid rgb(255, 255, 255);
   text-decoration: none;
-  transition: all 0.2s ease-in-out;
-  box-sizing: border-box;
+  font-weight: 600;
+  color: white !important;
+  transition: 0.25s;
+  background: radial-gradient(circle at center, #12182B 10%, #0B0F1A 100%);
+
+  
 }
 
-/* Estilo específico do botão "Entrar" (fundo branco) */
-.btn-primary {
-  background-color: #FFFFFF;
-  color: #12182B;
+.btn:hover {
+  background: white;
+  color: #12182B !important;
 }
 
-/* Efeito ao passar o mouse por cima do botão "Entrar" */
-.btn-primary:hover {
-  background-color: transparent;
-  color: #FFFFFF;
-}
-
-/* Estilo específico do botão "Criar conta" (fundo transparente) */
-.btn-secondary {
-  background-color: transparent;
-  color: #FFFFFF;
-}
-
-/* Efeito ao passar o mouse por cima do botão "Criar conta" */
-.btn-secondary:hover {
-  background-color: #FFFFFF;
-  color: #12182B;
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
 }

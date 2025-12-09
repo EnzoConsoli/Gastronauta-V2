@@ -17,7 +17,7 @@ export class FollowersListComponent implements OnInit {
   title = '';
   users: any[] = [];
 
-  private loggedUserId: number = 0;
+  loggedUserId: number = 0;
   private viewedUserId: number = 0;
   private type: 'followers' | 'following' | null = null;
 
